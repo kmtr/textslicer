@@ -45,10 +45,12 @@ type XlsxSlicer struct {
 }
 
 func (xlss *XlsxSlicer) Slice(n int, scanner *bufio.Scanner) error {
-	var lineList *list.List
+	return slice(n, scanner, xlss.ChunkProcessor)
+}
 
+func slice(n int, scanner *bufio.Scanner, cp ChunkProcessor) error {
+	var lineList *list.List
 	i := 0
-	chunkNum := 0
 	for scanner.Scan() {
 		i++
 		if lineList == nil {
@@ -59,14 +61,12 @@ func (xlss *XlsxSlicer) Slice(n int, scanner *bufio.Scanner) error {
 			lineList.PushBack(line)
 		}
 		if n == lineList.Len() {
-			chunkNum++
-			xlss.ChunkProcessor.Proc(lineList)
+			cp.Proc(lineList)
 			lineList = nil
 		}
 	}
 	if lineList.Len() > 0 {
-		chunkNum++
-		xlss.ChunkProcessor.Proc(lineList)
+		cp.Proc(lineList)
 		lineList = nil
 	}
 	if err := scanner.Err(); err != nil {
