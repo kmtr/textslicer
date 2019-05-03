@@ -14,7 +14,11 @@ jkl
 mno`
 
 	slicer := &XlsxSlicer{
-		NameMaker: new(XlsxNameMaker),
+		ChunkProcessor: &ChunkPrinter{
+			NameMaker: &XlsxNameMaker{
+				Prefix: "test",
+			},
+		},
 	}
 	buf := bytes.NewBufferString(sample)
 	scanner := bufio.NewScanner(buf)

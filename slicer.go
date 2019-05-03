@@ -12,11 +12,11 @@ type ChunkProcessor interface {
 }
 
 type ChunkPrinter struct {
-	outputName string
+	NameMaker NameMaker
 }
 
 func (cp *ChunkPrinter) Proc(chunk *list.List) {
-	fmt.Println(cp.outputName)
+	fmt.Println(cp.NameMaker.Name())
 	for e := chunk.Front(); e != nil; e = e.Next() {
 		fmt.Fprintln(os.Stdout, e.Value)
 	}
@@ -41,7 +41,7 @@ type Slicer interface {
 }
 
 type XlsxSlicer struct {
-	NameMaker NameMaker
+	ChunkProcessor ChunkProcessor
 }
 
 func (xlss *XlsxSlicer) Slice(n int, scanner *bufio.Scanner) error {
@@ -60,19 +60,13 @@ func (xlss *XlsxSlicer) Slice(n int, scanner *bufio.Scanner) error {
 		}
 		if n == lineList.Len() {
 			chunkNum++
-			cp := &ChunkPrinter{
-				outputName: xlss.NameMaker.Name(),
-			}
-			cp.Proc(lineList)
+			xlss.ChunkProcessor.Proc(lineList)
 			lineList = nil
 		}
 	}
 	if lineList.Len() > 0 {
 		chunkNum++
-		cp := &ChunkPrinter{
-			outputName: xlss.NameMaker.Name(),
-		}
-		cp.Proc(lineList)
+		xlss.ChunkProcessor.Proc(lineList)
 		lineList = nil
 	}
 	if err := scanner.Err(); err != nil {

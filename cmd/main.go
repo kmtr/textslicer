@@ -25,8 +25,10 @@ func run(source atai.ValueProvider, sliceNum atai.ValueProvider) error {
 
 	scanner := bufio.NewScanner(f)
 	slicer := &textslicer.XlsxSlicer{
-		NameMaker: &textslicer.XlsxNameMaker{
-			Prefix: f.Name(),
+		ChunkProcessor: &textslicer.ChunkPrinter{
+			NameMaker: &textslicer.XlsxNameMaker{
+				Prefix: f.Name(),
+			},
 		},
 	}
 	if err := slicer.Slice(n, scanner); err != nil {
