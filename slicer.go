@@ -1,15 +1,10 @@
-package main
+package textslicer
 
 import (
 	"bufio"
 	"container/list"
-	"flag"
 	"fmt"
-	"log"
 	"os"
-	"strconv"
-
-	"github.com/kmtr/atai"
 )
 
 type ChunkProcessor interface {
@@ -27,11 +22,29 @@ func (cp *ChunkPrinter) Proc(chunk *list.List) {
 	}
 }
 
-func makeOutputName(prefix, suffix string, n int) string {
-	return fmt.Sprintf("%s-%03d.%s", prefix, n, suffix)
+type NameMaker interface {
+	Name() string
 }
 
-func scan(prefix, suffix string, n int, scanner *bufio.Scanner) error {
+type XlsxNameMaker struct {
+	Prefix  string
+	counter int
+}
+
+func (xnm *XlsxNameMaker) Name() string {
+	xnm.counter++
+	return fmt.Sprintf("%s-%03d.%s", xnm.Prefix, xnm.counter, "xlsx")
+}
+
+type Slicer interface {
+	Slice(n int, scanner *bufio.Scanner) error
+}
+
+type XlsxSlicer struct {
+	NameMaker NameMaker
+}
+
+func (xlss *XlsxSlicer) Slice(n int, scanner *bufio.Scanner) error {
 	var lineList *list.List
 
 	i := 0
@@ -48,7 +61,7 @@ func scan(prefix, suffix string, n int, scanner *bufio.Scanner) error {
 		if n == lineList.Len() {
 			chunkNum++
 			cp := &ChunkPrinter{
-				outputName: makeOutputName(prefix, suffix, chunkNum),
+				outputName: xlss.NameMaker.Name(),
 			}
 			cp.Proc(lineList)
 			lineList = nil
@@ -57,7 +70,7 @@ func scan(prefix, suffix string, n int, scanner *bufio.Scanner) error {
 	if lineList.Len() > 0 {
 		chunkNum++
 		cp := &ChunkPrinter{
-			outputName: makeOutputName(prefix, suffix, chunkNum),
+			outputName: xlss.NameMaker.Name(),
 		}
 		cp.Proc(lineList)
 		lineList = nil
@@ -66,38 +79,4 @@ func scan(prefix, suffix string, n int, scanner *bufio.Scanner) error {
 		return err
 	}
 	return nil
-
-}
-
-func run(source atai.ValueProvider, sliceNum atai.ValueProvider) error {
-	n, err := strconv.Atoi(sliceNum())
-	if err != nil {
-		return err
-	}
-
-	f, err := os.Open(source())
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	fname := f.Name()
-	scanner := bufio.NewScanner(f)
-	if err := scan(fname, ".xlsx", n, scanner); err != nil {
-		return err
-	}
-	return nil
-}
-
-func main() {
-	flag.String("f", "", "source")
-	flag.String("n", "100", "slice num")
-	flag.Parse()
-
-	source := atai.ValueFromFlag("f")
-	sliceNum := atai.ValueFromFlag("n")
-	if err := run(source, sliceNum); err != nil {
-		log.Println(err)
-		os.Exit(1)
-	}
 }

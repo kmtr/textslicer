@@ -1,4 +1,4 @@
-package main
+package textslicer
 
 import (
 	"bufio"
@@ -13,8 +13,10 @@ ghi
 jkl
 mno`
 
+	slicer := &XlsxSlicer{
+		NameMaker: new(XlsxNameMaker),
+	}
 	buf := bytes.NewBufferString(sample)
 	scanner := bufio.NewScanner(buf)
-	scan("test", ".xls", 2, scanner)
-
+	slicer.Slice(2, scanner)
 }
