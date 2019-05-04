@@ -9,6 +9,7 @@ import (
 
 	"github.com/kmtr/atai"
 	"github.com/kmtr/textslicer"
+	"github.com/tealeg/xlsx"
 )
 
 func run(source atai.ValueProvider, sliceNum atai.ValueProvider) error {
@@ -24,16 +25,22 @@ func run(source atai.ValueProvider, sliceNum atai.ValueProvider) error {
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
-	slicer := &textslicer.XlsxSlicer{
-		ChunkProcessor: &textslicer.ChunkPrinter{
+	xlsxFile := xlsx.NewFile()
+	cp := textslicer.NewXlsxPrinter(xlsxFile)
+	/*
+		&textslicer.ChunkPrinter{
 			NameMaker: &textslicer.XlsxNameMaker{
 				Prefix: f.Name(),
 			},
 		},
+	*/
+	slicer := &textslicer.XlsxSlicer{
+		ChunkProcessor: cp,
 	}
 	if err := slicer.Slice(n, scanner); err != nil {
 		return err
 	}
+	xlsxFile.Save("./sample.xlsx")
 	return nil
 }
 
